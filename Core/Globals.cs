@@ -5,8 +5,6 @@ namespace Morpeh.Globals {
         internal sealed class ProcessEventsSystem : ILateSystem {
             public World World { get; set; }
 
-            public string name => "MorpehProcessEventsSystem";
-
             public void OnAwake() {
             }
 
@@ -16,6 +14,10 @@ namespace Morpeh.Globals {
                 }
 
                 var list = GlobalsUpdater.DispatchedEvents;
+                if (list.Count == 0) {
+                    return;
+                }
+
                 GlobalsUpdater.DispatchedEvents = GlobalsUpdater.ExecutingEvents;
                 GlobalsUpdater.ExecutingEvents  = list;
 
@@ -36,17 +38,7 @@ namespace Morpeh.Globals {
     }
 
     internal static class GlobalsUpdater {
-        public static List<IGlobalUpdateListener> DispatchedEvents { get; set; } = new List<IGlobalUpdateListener>();
-        public static List<IGlobalUpdateListener> ExecutingEvents  { get; set; } = new List<IGlobalUpdateListener>();
-    }
-}
-
-namespace Morpeh {
-    public static class GlobalsWorldExtensions {
-        public static void InitializeGlobals(this World world) {
-            var sg = world.CreateSystemsGroup();
-            sg.AddSystem(new Morpeh.Globals.ECS.ProcessEventsSystem());
-            world.AddSystemsGroup(99999, sg);
-        }
+        public static List<IGlobalUpdateListener> DispatchedEvents = new List<IGlobalUpdateListener>();
+        public static List<IGlobalUpdateListener> ExecutingEvents = new List<IGlobalUpdateListener>();
     }
 }

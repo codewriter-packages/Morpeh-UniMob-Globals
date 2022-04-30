@@ -1,7 +1,7 @@
 namespace Morpeh.Globals {
     using UnityEngine;
 
-    public class BaseGlobal : ScriptableObject {
+    public abstract class BaseGlobal : ScriptableObject {
         
     }
 }

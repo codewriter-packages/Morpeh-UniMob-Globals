@@ -10,10 +10,6 @@
 #endif
 
     public abstract class BaseGlobalVariable<TData> : BaseGlobal, IGlobalUpdateListener, IGlobalVariable {
-        // остатки старой версии, нужно чтобы при реимпорте ассета не менялась структура файла
-        [SerializeField, HideInInspector]
-        private int internalEntityID;
-
         [PropertySpace]
         [Title("Default Data")]
         [SerializeField]
@@ -23,10 +19,7 @@
         [DisableInPlayMode]
         private TData value;
 
-        // остатки старой версии, нужно чтобы при реимпорте ассета не менялась структура файла
-        [SerializeField, HideInInspector]
-        private string defaultSerializedValue;
-
+        [NonSerialized]
         [ShowInInspector]
         [PropertySpace]
         [Title("Runtime Data")]
@@ -34,41 +27,9 @@
         [DelayedProperty]
         [HideLabel]
         [HideInEditorMode]
-        private TData RuntimeValue {
-            get {
-#if UNITY_EDITOR
-                if (this.runtimeValueHolder == null) {
-                    return default;
-                }
-#endif
-
-                return this.runtimeValueHolder.Value;
-            }
-            set {
-#if UNITY_EDITOR
-                if (this.runtimeValueHolder == null) {
-                    Debug.LogError("Cannot access RuntimeValue in EditMode");
-                }
-                else
-#endif
-
-                {
-                    using (Atom.NoWatch) {
-                        if (EqualityComparer<TData>.Default.Equals(this.runtimeValueHolder.Value, value)) {
-                            return;
-                        }
-                    }
-                    
-                    this.runtimeValueHolder.Value = value;
-
-                    if (!this.isPublished) {
-                        GlobalsUpdater.DispatchedEvents.Add(this);
-                    }
-
-                    this.isPublished = true;
-                }
-            }
-        }
+        [OnValueChanged(nameof(InvalidateRuntimeValue))]
+        [OnInspectorGUI(nameof(OnRuntimeValueInspector), append: true)]
+        private TData runtimeValue;
 
         private const string COMMON_KEY = "MORPEH__GLOBALS_VARIABLES_";
 
@@ -126,7 +87,8 @@
                     return this.DefaultValue;
                 }
 #endif
-                return this.RuntimeValue;
+
+                return this.runtimeValueHolder.Value;
             }
             set {
 #if UNITY_EDITOR
@@ -136,7 +98,7 @@
                 else
 #endif
                 {
-                    this.RuntimeValue = value;
+                    this.runtimeValueHolder.Value = value;
                 }
             }
         }
@@ -160,6 +122,35 @@
             }
 
             this.isPublished = true;
+        }
+
+        private void InvalidateRuntimeValue()
+        {
+            this.runtimeValueHolder?.Invalidate();
+        }
+
+        private TData GetRuntimeValue() {
+            return this.runtimeValue;
+        }
+        
+        private void SetRuntimeValue(TData newValue)
+        {
+            this.runtimeValue = newValue;
+
+            if (this.isPublished) {
+                return;
+            }
+
+            this.isPublished = true;
+
+            GlobalsUpdater.DispatchedEvents.Add(this);
+        }
+
+        private void OnRuntimeValueInspector()
+        {
+#if UNITY_EDITOR
+            Sirenix.Utilities.Editor.GUIHelper.RequestRepaint();
+#endif
         }
 
         internal class Subscription : IDisposable {
@@ -217,11 +208,14 @@
 
             this.isLoaded = true;
 
-            var savedValue = this.AutoSave && PlayerPrefs.HasKey(this.Key)
+            this.runtimeValue = this.AutoSave && PlayerPrefs.HasKey(this.Key)
                 ? this.Deserialize(PlayerPrefs.GetString(this.Key))
                 : this.GetDefaultValue();
 
-            this.runtimeValueHolder = Atom.Value(savedValue, debugName: this.name);
+            this.runtimeValueHolder = Atom.Computed(Lifetime.Eternal,
+                pull: this.GetRuntimeValue,
+                push: this.SetRuntimeValue,
+                debugName: this.name);
         }
 
         internal void SaveData() {
