@@ -4,6 +4,8 @@
   "displayName": "Morpeh UniMob Globals",
   "description": "UniMob driven global variables for Morpeh.",
   "unity": "2020.1",
-  "version": "0.0.1",
-  "dependencies": {}
+  "version": "1.0.1",
+  "dependencies": {
+    "com.codewriter.unimob": "2.1.0"
+  }
 }
