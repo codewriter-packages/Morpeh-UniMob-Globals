@@ -13,7 +13,7 @@ namespace Morpeh
 
         static partial void InitializeGlobals(this World world) {
             var sg = world.CreateSystemsGroup();
-            sg.AddSystem(new Morpeh.Globals.ECS.ProcessEventsSystem());
+            sg.AddSystem(new Morpeh.Globals.ECS.ProcessUniMobEventsSystem());
             world.AddSystemsGroup(99999, sg);
         }
     }

@@ -2,7 +2,7 @@ namespace Morpeh.Globals {
     using System.Collections.Generic;
 
     namespace ECS {
-        internal sealed class ProcessEventsSystem : ILateSystem {
+        internal sealed class ProcessUniMobEventsSystem : ILateSystem {
             public World World { get; set; }
 
             public void OnAwake() {
